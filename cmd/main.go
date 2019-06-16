@@ -9,6 +9,8 @@ import (
 	"github.com/tendermint/tendermint/libs/log"
 
 	abcicli "github.com/tendermint/tendermint/abci/client"
+	rpccli "github.com/tendermint/tendermint/rpc/client"
+
 	"github.com/tendermint/tendermint/abci/server"
 	"github.com/tendermint/tendermint/abci/types"
 	"github.com/vocdoni/go-dvote-chain/counter"
@@ -20,13 +22,13 @@ var (
 )
 
 var app *counter.CounterApplication
+var tmRPC rpccli.Client
 
 func startABCI() {
 
 	flagAddress := "0.0.0.0:26658"
-	flagSerial := true
+	flagSerial := false
 	flagAbci := "socket"
-	//	flabLogLevel := "debug"
 
 	app = counter.NewCounterApplication(flagSerial)
 	logger := log.NewTMLogger(log.NewSyncWriter(os.Stdout))
@@ -53,6 +55,7 @@ func startABCI() {
 
 func main() {
 	go startABCI()
+	tmRPC = rpccli.NewHTTP("http://localhost:26657", "/websocket")
 	reader := bufio.NewReader(os.Stdin)
 	var reqQuery types.RequestQuery
 
@@ -60,9 +63,16 @@ func main() {
 		fmt.Println("---------------------")
 		fmt.Print("tx: ")
 		tx, _ := reader.ReadString('\n')
-		response := app.DeliverTx([]byte(tx))
-		fmt.Printf("Response: %t\n", response.Log)
-		//fmt.Printf("Comit: %s\n", app.Commit().Data)
+		res, err := tmRPC.BroadcastTxCommit([]byte(tx))
+		if err != nil {
+			fmt.Println(err)
+		}
+		if res.CheckTx.IsErr() {
+			fmt.Println(res.CheckTx.Log)
+		}
+		if res.DeliverTx.IsErr() {
+			fmt.Println(res.DeliverTx.Log)
+		}
 
 		reqQuery.Path = "hash"
 		fmt.Printf("Hashes: %s\n", app.Query(reqQuery).Value)

@@ -13,7 +13,7 @@ import (
 
 	"github.com/tendermint/tendermint/abci/server"
 	"github.com/tendermint/tendermint/abci/types"
-	"github.com/vocdoni/go-dvote-chain/counter"
+	tmapp "github.com/vocdoni/go-dvote-chain/app"
 )
 
 var (
@@ -21,7 +21,7 @@ var (
 	logger log.Logger
 )
 
-var app *counter.CounterApplication
+var app *tmapp.CounterApplication
 var tmRPC rpccli.Client
 
 func startABCI() {
@@ -30,7 +30,7 @@ func startABCI() {
 	flagSerial := false
 	flagAbci := "socket"
 
-	app = counter.NewCounterApplication(flagSerial)
+	app = tmapp.NewCounterApplication(flagSerial)
 	logger := log.NewTMLogger(log.NewSyncWriter(os.Stdout))
 
 	// Start the listener
